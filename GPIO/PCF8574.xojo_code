@@ -334,6 +334,16 @@ Protected Class PCF8574
 		End Sub
 	#tag EndMethod
 
+	#tag Method, Flags = &h0
+		Sub Channels(inChannels() As Integer, inBit As Boolean)
+		  //-- Sets multiple channels at once
+		  //- inChannels(): An array with each channel's number to be set.
+		  //- inBit: The state to set all the channels in inChannels() to.
+		  
+		  Self.Channels( inChannels, Array( inBit ) )
+		End Sub
+	#tag EndMethod
+
 	#tag Method, Flags = &h21
 		Private Sub Constructor()
 		  //-- Disabled constructor
