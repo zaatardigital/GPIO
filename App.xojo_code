@@ -13,6 +13,7 @@ Inherits ConsoleApplication
 		  Print "5) Buzzer Long Tone Test"
 		  Print "6) LCD Test"
 		  Print "7) LCD Scroll Test"
+		  Print "8) PCF8574 Test"
 		  
 		  While True
 		    Print "Choose: "
@@ -33,6 +34,8 @@ Inherits ConsoleApplication
 		      LCDTest
 		    Case "7"
 		      LCDScrollTest
+		    Case "8"
+		      PCF8574Test
 		    Else
 		      Quit
 		    End Select
@@ -234,6 +237,34 @@ Inherits ConsoleApplication
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
+		Private Sub HandlePCF8574Interrupt(refSender As GPIO.PCF8574, inBits() As Boolean)
+		  //-- Handles the PCF8574.Interrupt() event
+		  //- refSender: A reference to the PCF8574 that is interrupting
+		  //- inBits: An array of height Booleans matching the I/O channel states
+		  
+		  // Retrieve the down switches
+		  Dim theToggledChannels() As Integer
+		  
+		  For i As Integer= 0 To 3 
+		    
+		    If inBits( i ) = GPIO.PCF8574.kChannel_ON Then
+		      // Add the matching outpout channel for this switch
+		      thetoggledChannels.Append i + 4
+		      
+		    End If
+		    
+		  Next
+		  
+		  // Is there at least a channel to toggle?
+		  If theToggledChannels.Ubound > -1 Then
+		    // Yes. Let's toogle it/them
+		    refSender.ToggleChannels( theToggledChannels )
+		    
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub LCDScrollTest()
 		  // Display text on 4-line LCD
 		  GPIO.SetupGPIO
@@ -286,6 +317,44 @@ Inherits ConsoleApplication
 		  lcd.SetMessage("1234567890!@#$%^&*()", 3)
 		  lcd.SetMessage("-=[];',./_+{}:""<>?", 4)
 		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub PCF8574Test()
+		  // Testing the PCF8574 class
+		  
+		  // Here you can change the device address and the interrupt pin number
+		  Const kDeviceAddress = &h20
+		  Const kInterruptPin = 4 // Physical pin number is 16 
+		  
+		  Print "Initializing WiringPi..."
+		  GPIO.Setup
+		  
+		  Print "Creating the instance of GPIO.PCF8574..."
+		  Dim thePCF8574 As New GPIO.PCF8574( &h20 )
+		  
+		  Print "Setting the input channels (0-3)..."
+		  // Setup the inputs
+		  For i As integer = 0 to 3
+		    thePCF8574.ChannelMode( i ) = GPIO.PCF8574.ChannelModes.Input
+		    
+		  Next
+		  
+		  Print "...And the LEDs output channels (4-7)"
+		  thePCF8574.Channels( Array( 4, 5, 6 ,7 ), GPIO.PCF8574.kChannel_ON )
+		  
+		  // Setup and start the interrupt observer
+		  AddHandler thePCF8574.Interrupt, AddressOf App.HandlePCF8574Interrupt
+		  thePCF8574.StartInterruptObserver( 4 )
+		  
+		  Print "Now you can play with the switches..."
+		  Do
+		    App.DoEvents
+		    
+		  Loop
+		  
+		  // You have to hit Ctrl-C to stop the program
 		End Sub
 	#tag EndMethod
 
