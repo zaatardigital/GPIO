@@ -336,7 +336,7 @@ Protected Class PCF8574
 
 	#tag Method, Flags = &h21
 		Private Sub Constructor()
-		  // Deactivated constructor
+		  //-- Disabled constructor
 		End Sub
 	#tag EndMethod
 
@@ -376,6 +376,7 @@ Protected Class PCF8574
 	#tag Method, Flags = &h21
 		Private Sub InterruptObserverRun(refObserver As Thread)
 		  //-- This is the delegate for the interrupt observer thread's Run() event
+		  //- refObserver: a reference to the thread handling the delegate.
 		  // It checks periodically the state of the interrupt pin
 		  
 		  Do
@@ -397,6 +398,10 @@ Protected Class PCF8574
 	#tag Method, Flags = &h0
 		Sub StartInterruptObserver(inInterruptPin As Integer, inSleepTime As Integer = 100, inWakeEarly As Boolean = False)
 		  //-- Start the interrupt observer thread
+		  //- inInterruptPin: The number of the pin where the INT channel of the PCF is connected
+		  // in respect of the GPIO.Setup method you used.
+		  //- inSleepTime: The time interval between 2 'observations' in msecs. (100 by default)
+		  //- inWakeEarly: If True it allows the oberver thread to wake up early if there are no other threads able to execute.
 		  
 		  // Set the pin as input 
 		  GPIO.PinMode( pInterruptPin, GPIO.INPUT )
@@ -408,6 +413,8 @@ Protected Class PCF8574
 		  // Store a reference to the observer and the pin number
 		  pInterruptObserver = theObserver
 		  pInterruptPin = inInterruptPin
+		  
+		  // and the thread running parameters
 		  pInterruptObserverSleepTime = inSleepTime
 		  pInterruptObserverWakeEarly = inWakeEarly
 		  
@@ -438,7 +445,7 @@ Protected Class PCF8574
 	#tag Method, Flags = &h0
 		Sub ToggleChannel(inChannelNumber As Integer)
 		  //-- Toogle the state of a single channel
-		  //   inChannel: The number of the channel to be toggled.
+		  //- inChannel: The number of the channel to be toggled.
 		  
 		  // -- Pre Conditions --
 		  
@@ -474,7 +481,7 @@ Protected Class PCF8574
 		  End If
 		  
 		  // Apply the toggle mask (XOR) and the input mask (OR) to keep the input channel(s) high
-		  // Note: Or and Xor have the same operator precedence
+		  // Note: Xor and Or have the same operator precedence
 		  theRegister = theRegister Xor theToggleMask Or pInputsMask 
 		  
 		  // Write the updated register back to the device
@@ -490,7 +497,8 @@ Protected Class PCF8574
 
 	#tag Method, Flags = &h0
 		Sub ToggleChannels(inChannels() As Integer)
-		  print CurrentMethodName
+		  //-- Toogles the state of the channel number(s) in th array
+		  //- inChannel: An array of channel numbers to toggle
 		  
 		  // Cache the upperbound of the channel numbers array
 		  Dim theUbound As Integer = inChannels.Ubound
@@ -585,6 +593,46 @@ Protected Class PCF8574
 	#tag EndHook
 
 
+	#tag Note, Name = About
+		The GPIO.PCF8574 class is an abstraction of the I2C remote 8-bit I/O expander PCF8574.
+		It provides methods to read and set the 8 channels provided by this integrated circuit without bothering about the I2C exchange.
+		It also assists you with the managing of the input or output states of the PCF8574, which can be tricky to handle properly.
+		Finally, GPIO.PCF8574 class provides you with a mechanism to handle interupts with an easy to setup and use observer thread.
+		
+		** The CHANNEL_ON and CHANNEL_OFF Constants
+		
+		By design the active state of a channel as an output is when it's logical state is LOW and inactive when it's HIGH.
+		To match this behavior and for a better readability, the Boolean constant CHANNEL_ON is False and CHANNEL_OFF is True.
+		
+		** About interrupts
+		
+		WiringPi provides a mechanism to handle interrupts with the wiringPiISR() function. Unfortunately, it uses preemptive thread,
+		which is not safe to use with Xojo. the CPIO.PCF8574 class uses a Xojo native thread to periodically observe the state of the pin
+		where the INT pin of the PCF8574 is connected to the Raspbery Pi.
+		
+		** More documentation
+		
+		Each method is documented at the top of its code, explaining what it does and what the parameters are for.
+	#tag EndNote
+
+	#tag Note, Name = The PCF8574 chip
+		** Remote 8-bit I/O expander for I2C-bus with interrupt
+		
+		The PCF8574/74A provides 8 remote I/O channels with interrupt driven by the two-wire bidirectional I2C-bus.
+		Each channel is an independant quasi-bidirectional port that can be assigned as a digital input or output.
+		It works with a Vcc between 2.5V and 6V with a maximum current of 80ma.
+		
+		Datasheets:
+		 - Texas Instruments:
+		         http://www.ti.com/lit/ds/symlink/pcf8574.pdf
+		
+		 - NXP:
+		         https://www.nxp.com/docs/en/data-sheet/PCF8574_PCF8574A.pdf
+		
+		
+	#tag EndNote
+
+
 	#tag ComputedProperty, Flags = &h0, CompatibilityFlags = (TargetConsole and (Target32Bit or Target64Bit)) or  (TargetWeb and (Target32Bit or Target64Bit)) or  (TargetDesktop and (Target32Bit or Target64Bit))
 		#tag Getter
 			Get
@@ -623,6 +671,13 @@ Protected Class PCF8574
 	#tag Property, Flags = &h21
 		Private pInterruptPin As Integer
 	#tag EndProperty
+
+
+	#tag Constant, Name = kChannel_OFF, Type = Boolean, Dynamic = False, Default = \"True", Scope = Public
+	#tag EndConstant
+
+	#tag Constant, Name = kChannel_ON, Type = Boolean, Dynamic = False, Default = \"False", Scope = Public
+	#tag EndConstant
 
 
 	#tag Enum, Name = ChannelModes, Type = Integer, Flags = &h0
